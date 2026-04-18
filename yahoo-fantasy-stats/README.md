@@ -87,6 +87,7 @@ yahoo-fantasy-stats/
 │   ├── 2-cumulative-stats.md
 │   └── 3-rank-comparison.md
 ├── scripts/
+│   ├── aggregate.py                # Phase 2 multi-week aggregator (ratio recompute)
 │   ├── build_grid.py               # Phase 1/2 renderer
 │   ├── build_rank.py               # Phase 3 renderer
 │   ├── load_config.py              # nickname config loader

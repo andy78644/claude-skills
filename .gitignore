@@ -17,3 +17,6 @@ Thumbs.db
 
 # Local skill outputs / test artifacts
 /tmp/
+
+# Claude Code local project settings
+.claude/
