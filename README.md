@@ -7,6 +7,7 @@ A collection of Claude Code skills for various workflows and integrations.
 | Skill | Description |
 |-------|-------------|
 | [yahoo-fantasy](./yahoo-fantasy/) | Yahoo Fantasy Sports team analysis and waiver wire recommendations |
+| [yahoo-fantasy-stats](./yahoo-fantasy-stats/) | Weekly/cumulative H2H grids and rank comparison tables rendered as PNG |
 
 ## Installation
 

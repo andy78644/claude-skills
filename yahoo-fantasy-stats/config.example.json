@@ -1,0 +1,23 @@
+{
+  "league_key": "469.l.103062",
+  "league_name": "My Fantasy League",
+  "teams": {
+    "469.l.103062.t.1": "Alice",
+    "469.l.103062.t.2": "Bob",
+    "469.l.103062.t.3": "Carol",
+    "469.l.103062.t.4": "Dave",
+    "469.l.103062.t.5": "Eve",
+    "469.l.103062.t.6": "Frank",
+    "469.l.103062.t.7": "Grace",
+    "469.l.103062.t.8": "Heidi",
+    "469.l.103062.t.9": "Ivan",
+    "469.l.103062.t.10": "Judy",
+    "469.l.103062.t.11": "Ken",
+    "469.l.103062.t.12": "Leo"
+  },
+  "display_order": [
+    "Alice", "Bob", "Carol", "Dave", "Eve", "Frank",
+    "Grace", "Heidi", "Ivan", "Judy", "Ken", "Leo"
+  ],
+  "_note": "Copy this file to ~/.config/yahoo-fantasy-stats/{league_key}.json. Replace team_keys with your real Yahoo team_keys (from mcp__yahoo-fantasy__get_league_teams), and replace the names with your preferred display nicknames. `display_order` controls the row ordering in output tables."
+}
