@@ -26,10 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from render_png import html_to_png  # noqa: E402
-
-BATTER_CATS = ["R", "HR", "RBI", "SB", "BB", "AVG", "OPS"]
-PITCHER_CATS = ["W", "SV", "K", "QS", "BB", "ERA", "WHIP"]
-PITCHER_LOWER_IS_BETTER = {"BB", "ERA", "WHIP"}
+from stats import BATTER_CATS, PITCHER_CATS, PITCHER_LOWER_IS_BETTER  # noqa: E402
 
 ALL_COLS = [("batter", c) for c in BATTER_CATS] + [("pitcher", c) for c in PITCHER_CATS]
 COL_HEADERS = BATTER_CATS + PITCHER_CATS

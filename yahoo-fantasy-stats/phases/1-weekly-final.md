@@ -16,16 +16,9 @@ Call:
 mcp__yahoo-fantasy__get_league_scoreboard(league_key, week=N)
 ```
 
-This returns matchup data with each team's stats for the week. Extract for each team:
+This returns matchup data with each team's stats for the week, keyed by stat label. The canonical category list lives in `scripts/stats.py` (`BATTER_CATS` / `PITCHER_CATS`) — that is the single source of truth, do **not** restate it here or guess stat IDs. The scoreboard returns stats keyed by label (e.g. `stats["QS"]`); copy values by label name directly.
 
-```
-batter: R, HR, RBI, SB, BB, AVG, OPS
-pitcher: W, SV, K, QS, BB, ERA, WHIP
-```
-
-Yahoo's stat IDs map (verify with actual response — adjust if different):
-- 7=R, 12=HR, 13=RBI, 16=SB, 18=BB(batter), 3=AVG, 55=OPS
-- 28=W, 32=SV, 42=K, 50=QS, 39=BB(pitcher), 26=ERA, 27=WHIP
+Note: in the scoreboard payload, batter walks are keyed `BB_B` and pitcher walks are `BB_P` (both map to the canonical `BB` field in the build_grid input).
 
 If a team did not play (bye) or stats are missing, use 0 for counting stats and skip the comparison for ratio stats (treat as tie).
 

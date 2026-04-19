@@ -26,6 +26,22 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from stats import (  # noqa: E402
+    BATTER_CATS,
+    PITCHER_CATS,
+    PITCHER_LOWER_IS_BETTER,
+    get_stat,
+)
+
+# Ratio stats are recomputed from components, not summed directly.
+RATIO_CATS = {"AVG", "OPS"} | PITCHER_LOWER_IS_BETTER  # AVG, OPS, BB(p), ERA, WHIP
+# BB(pitcher) is technically a counting stat but happens to also be in
+# PITCHER_LOWER_IS_BETTER; pull it back out.
+RATIO_CATS.discard("BB")
+COUNTING_BATTER = [c for c in BATTER_CATS if c not in RATIO_CATS]
+COUNTING_PITCHER = [c for c in PITCHER_CATS if c not in RATIO_CATS]
+
 
 def parse_ip(ip_str: str) -> float:
     """Yahoo stores IP as 'X.Y' where .1 = 1/3, .2 = 2/3 innings."""
@@ -65,69 +81,51 @@ def num(x) -> float:
 
 def aggregate_team(raw_weeks: list[dict]) -> dict:
     """Given a list of this team's weekly stat dicts, return aggregated batter/pitcher."""
+    batter_sums = {c: 0 for c in COUNTING_BATTER}
+    pitcher_sums = {c: 0 for c in COUNTING_PITCHER}
+
     sum_h = sum_ab = 0
-    sum_r = sum_hr = sum_rbi = sum_sb = sum_bb_b = 0
     weighted_ops_num = 0.0
     weighted_ops_den = 0  # total AB
-
     sum_ip = 0.0
-    sum_w = sum_sv = sum_k = sum_qs = sum_bb_p = 0
     sum_er = 0.0
     sum_hits_allowed = 0.0
 
     for wk in raw_weeks:
-        h, ab = parse_h_ab(wk["H/AB"])
-        bb_b = int(num(wk["BB_B"]))
-        ops = num(wk["OPS"])
+        # Counting stats — sum directly using SSoT cat lists.
+        for c in COUNTING_BATTER:
+            batter_sums[c] += int(num(get_stat(wk, "batter", c)))
+        for c in COUNTING_PITCHER:
+            pitcher_sums[c] += int(num(get_stat(wk, "pitcher", c)))
 
+        # Ratio stat components — H/AB for AVG, AB-weighted for OPS.
+        h, ab = parse_h_ab(wk["H/AB"])
         sum_h += h
         sum_ab += ab
-        sum_r += int(num(wk["R"]))
-        sum_hr += int(num(wk["HR"]))
-        sum_rbi += int(num(wk["RBI"]))
-        sum_sb += int(num(wk["SB"]))
-        sum_bb_b += bb_b
-        weighted_ops_num += ops * ab
+        weighted_ops_num += num(get_stat(wk, "batter", "OPS")) * ab
         weighted_ops_den += ab
 
+        # Pitching ratios — reconstruct ER and hits-allowed from published ratios.
         ip = parse_ip(wk["IP"])
-        era = num(wk["ERA"])
-        whip = num(wk["WHIP"])
-        bb_p = int(num(wk["BB_P"]))
+        bb_p = int(num(get_stat(wk, "pitcher", "BB")))
         sum_ip += ip
-        sum_w += int(num(wk["W"]))
-        sum_sv += int(num(wk["SV"]))
-        sum_k += int(num(wk["K"]))
-        sum_qs += int(num(wk["QS"]))
-        sum_bb_p += bb_p
-        sum_er += era * ip / 9.0
-        sum_hits_allowed += whip * ip - bb_p
+        sum_er += num(get_stat(wk, "pitcher", "ERA")) * ip / 9.0
+        sum_hits_allowed += num(get_stat(wk, "pitcher", "WHIP")) * ip - bb_p
 
     avg = sum_h / sum_ab if sum_ab else 0.0
     ops_avg = weighted_ops_num / weighted_ops_den if weighted_ops_den else 0.0
     era_cum = (sum_er * 9.0 / sum_ip) if sum_ip else 0.0
-    whip_cum = ((sum_hits_allowed + sum_bb_p) / sum_ip) if sum_ip else 0.0
+    whip_cum = ((sum_hits_allowed + pitcher_sums["BB"]) / sum_ip) if sum_ip else 0.0
 
-    return {
-        "batter": {
-            "R": sum_r,
-            "HR": sum_hr,
-            "RBI": sum_rbi,
-            "SB": sum_sb,
-            "BB": sum_bb_b,
-            "AVG": round(avg, 3),
-            "OPS": round(ops_avg, 3),
-        },
-        "pitcher": {
-            "W": sum_w,
-            "SV": sum_sv,
-            "K": sum_k,
-            "QS": sum_qs,
-            "BB": sum_bb_p,
-            "ERA": round(era_cum, 2),
-            "WHIP": round(whip_cum, 2),
-        },
-    }
+    batter_out = dict(batter_sums)
+    batter_out["AVG"] = round(avg, 3)
+    batter_out["OPS"] = round(ops_avg, 3)
+
+    pitcher_out = dict(pitcher_sums)
+    pitcher_out["ERA"] = round(era_cum, 2)
+    pitcher_out["WHIP"] = round(whip_cum, 2)
+
+    return {"batter": batter_out, "pitcher": pitcher_out}
 
 
 def extract_per_team_weeks(weeks: list[dict]) -> dict[str, list[dict]]:
