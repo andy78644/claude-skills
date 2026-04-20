@@ -53,8 +53,9 @@ python3 /Users/andy78644/Project/claude-skills/yahoo-fantasy-stats/scripts/build
 
 The script:
 1. Computes the 12×12 H2H matrix and per-team strength totals
-2. Generates HTML matching the reference layout
-3. Renders PNG via headless Chrome
+2. Computes Total / Batter / Pitcher **rank** (1–12, competition ranking so ties share a rank) from the strength values and renders them as three extra columns in the summary table, under a `Rank` group header alongside the existing `Strength` columns
+3. Generates HTML matching the reference layout
+4. Renders PNG via headless Chrome
 
 It also prints the strength summary JSON to stdout — capture it if Phase 3 will use it:
 

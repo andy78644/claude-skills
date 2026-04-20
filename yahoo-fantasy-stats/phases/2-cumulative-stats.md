@@ -57,6 +57,8 @@ python3 /Users/andy78644/Project/claude-skills/yahoo-fantasy-stats/scripts/build
 
 `aggregate.py` emits `build_grid.py`-compatible JSON. Capture `build_grid.py`'s stdout strength summary (same shape as Phase 1) for use by Phase 3.
 
+The rendered summary table includes Total / Batter / Pitcher **rank** columns (1–12, computed from the strength values) next to the strength cells — same layout as Phase 1.
+
 ## Step 4: Show the result
 
 Print the PNG path. Because `aggregate.py` recomputes ratios from the published weekly ratios (not from raw H/AB/ER components, which the scoreboard endpoint doesn't expose), AVG/OPS are accurate to within rounding; ERA/WHIP may differ by ±1 in borderline H2H comparisons vs. a true component-level computation. Flag this only if the user asks for maximum precision.
