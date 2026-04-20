@@ -79,6 +79,33 @@ def compute_all(teams: list[dict]) -> dict:
     return result
 
 
+def compute_ranks(strengths: dict) -> dict:
+    """Given {name: {total, batter, pitcher}}, return {name: {total, batter, pitcher}} with ranks (1 = best).
+
+    Uses standard competition ranking: ties share rank, next rank is skipped (1,2,2,4)."""
+    names = list(strengths.keys())
+
+    def rank_by(key: str) -> dict:
+        sorted_names = sorted(names, key=lambda n: -strengths[n][key])
+        ranks: dict[str, int] = {}
+        prev_val = None
+        prev_rank = 0
+        for i, n in enumerate(sorted_names, start=1):
+            val = strengths[n][key]
+            if val == prev_val:
+                ranks[n] = prev_rank
+            else:
+                ranks[n] = i
+                prev_rank = i
+                prev_val = val
+        return ranks
+
+    total_r = rank_by("total")
+    batter_r = rank_by("batter")
+    pitcher_r = rank_by("pitcher")
+    return {n: {"total": total_r[n], "batter": batter_r[n], "pitcher": pitcher_r[n]} for n in names}
+
+
 def fmt_stat(cat: str, val) -> str:
     if cat in ("AVG", "OPS"):
         return f"{val:.3f}".lstrip("0") if 0 <= val < 1 else f"{val:.3f}"
@@ -95,13 +122,15 @@ def cell_class(v: int) -> str:
     return "zero"
 
 
-def render_summary_table(teams: list[dict], strengths: dict) -> str:
-    """Top summary — each team's raw stats + strength totals."""
+def render_summary_table(teams: list[dict], strengths: dict, ranks: dict) -> str:
+    """Top summary — each team's raw stats + strength totals + ranks."""
     head_cells = "".join(f"<th>{c}</th>" for c in COL_HEADERS)
+    empty_cat_cells = "<th></th>" * len(COL_HEADERS)
     rows = []
     for t in teams:
         name = t["name"]
         s = strengths[name]
+        r = ranks[name]
         stat_cells = "".join(
             f"<td>{fmt_stat(cat, t['batter'][cat])}</td>" for cat in BATTER_CATS
         ) + "".join(
@@ -111,12 +140,24 @@ def render_summary_table(teams: list[dict], strengths: dict) -> str:
             f"<tr><th class='name'>{name}</th>{stat_cells}"
             f"<td class='total-cell'>{s['total']}</td>"
             f"<td class='sub'>{s['batter']}</td>"
-            f"<td class='sub'>{s['pitcher']}</td></tr>"
+            f"<td class='sub'>{s['pitcher']}</td>"
+            f"<td class='rank-total'>{r['total']}</td>"
+            f"<td class='rank-sub'>{r['batter']}</td>"
+            f"<td class='rank-sub'>{r['pitcher']}</td></tr>"
         )
     return f"""
 <table class='summary'>
   <thead>
-    <tr><th></th>{head_cells}<th class='total-cell'>Total</th><th class='sub'>Batter</th><th class='sub'>Pitcher</th></tr>
+    <tr class='group-header'>
+      <th></th>{empty_cat_cells}
+      <th colspan='3' class='strength-group'>Strength</th>
+      <th colspan='3' class='rank-group'>Rank</th>
+    </tr>
+    <tr>
+      <th></th>{head_cells}
+      <th class='total-cell'>Total</th><th class='sub'>Batter</th><th class='sub'>Pitcher</th>
+      <th class='rank-total'>Total</th><th class='rank-sub'>Batter</th><th class='rank-sub'>Pitcher</th>
+    </tr>
   </thead>
   <tbody>
     {''.join(rows)}
@@ -181,6 +222,14 @@ th.name { background: #fafafa; text-align: center; min-width: 46px; font-weight:
 table.summary { font-size: 14px; }
 table.summary td.total-cell { background: #cfe2f3; font-weight: 700; }
 table.summary td.sub { background: #ead1dc; }
+table.summary td.rank-total { background: #b6d7a8; font-weight: 700; }
+table.summary td.rank-sub { background: #d9ead3; font-weight: 600; }
+table.summary th.total-cell { background: #cfe2f3; }
+table.summary th.sub { background: #ead1dc; }
+table.summary th.rank-total { background: #b6d7a8; }
+table.summary th.rank-sub { background: #d9ead3; }
+table.summary tr.group-header th.strength-group { background: #a4c2f4; font-size: 13px; letter-spacing: 1px; }
+table.summary tr.group-header th.rank-group { background: #93c47d; font-size: 13px; letter-spacing: 1px; }
 table.summary th.name { font-size: 15px; }
 table.summary { margin-bottom: 32px; }
 table.h2h { font-size: 13px; }
@@ -220,8 +269,9 @@ def render_html(payload: dict) -> str:
     team_names = [t["name"] for t in teams]
     computed = compute_all(teams)
     strengths = {n: {"total": computed[n]["total"], "batter": computed[n]["batter"], "pitcher": computed[n]["pitcher"]} for n in team_names}
+    ranks = compute_ranks(strengths)
 
-    summary_html = render_summary_table(teams, strengths)
+    summary_html = render_summary_table(teams, strengths, ranks)
     grids = "".join(render_h2h_grid(n, team_names, computed[n]) for n in team_names)
 
     return f"""<!doctype html>
